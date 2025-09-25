@@ -1,8 +1,7 @@
 -- Drop existing tables and objects if they exist
-DROP TRIGGER IF EXISTS tr_file_version ON public.file_uploads;
+DROP TABLE IF EXISTS public.file_uploads CASCADE;
 DROP FUNCTION IF EXISTS set_file_version();
 DROP FUNCTION IF EXISTS get_next_file_version();
-DROP TABLE IF EXISTS public.file_uploads;
 
 -- Create the file_uploads table with all required columns and constraints
 CREATE TABLE public.file_uploads (
@@ -84,68 +83,13 @@ CREATE TRIGGER tr_file_version
     FOR EACH ROW
     EXECUTE FUNCTION set_file_version();
 
--- Storage bucket setup
-DO $$
-BEGIN
-    -- Ensure storage schema is properly configured
-    ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
-    
-    -- Create or update the chat_attachments bucket
-    INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-    VALUES (
-        'chat_attachments',
-        'chat_attachments',
-        true,
-        52428800, -- 50MB
-        ARRAY['image/*', 'application/pdf']::text[]
-    )
-    ON CONFLICT (id) DO UPDATE
-    SET 
-        public = true,
-        file_size_limit = 52428800,
-        allowed_mime_types = ARRAY['image/*', 'application/pdf']::text[];
-
-    -- Drop existing storage policies
-    DROP POLICY IF EXISTS "Allow authenticated uploads" ON storage.objects;
-    DROP POLICY IF EXISTS "Allow public downloads" ON storage.objects;
-    DROP POLICY IF EXISTS "Allow authenticated updates" ON storage.objects;
-    DROP POLICY IF EXISTS "Allow authenticated deletes" ON storage.objects;
-
-    -- Create new storage policies
-    CREATE POLICY "Allow authenticated uploads"
-    ON storage.objects FOR INSERT
-    TO authenticated
-    WITH CHECK (
-        bucket_id = 'chat_attachments'
-        AND (auth.uid() = (storage.foldername(name))[1]::uuid)
-    );
-
-    CREATE POLICY "Allow authenticated updates"
-    ON storage.objects FOR UPDATE
-    TO authenticated
-    USING (
-        bucket_id = 'chat_attachments'
-        AND (auth.uid() = (storage.foldername(name))[1]::uuid)
-    );
-
-    CREATE POLICY "Allow authenticated deletes"
-    ON storage.objects FOR DELETE
-    TO authenticated
-    USING (
-        bucket_id = 'chat_attachments'
-        AND (auth.uid() = (storage.foldername(name))[1]::uuid)
-    );
-
-    CREATE POLICY "Allow public downloads"
-    ON storage.objects FOR SELECT
-    TO public
-    USING (bucket_id = 'chat_attachments');
-END $$;
-
--- Grant necessary permissions
+-- Grant necessary permissions for file_uploads table
 GRANT ALL ON public.file_uploads TO authenticated;
 GRANT SELECT ON public.file_uploads TO public;
-GRANT ALL ON storage.objects TO authenticated;
-GRANT SELECT ON storage.objects TO public;
-GRANT ALL ON storage.buckets TO authenticated;
-GRANT SELECT ON storage.buckets TO public; 
+
+-- Note: Storage bucket and policies should be configured via Supabase Dashboard
+-- or using the Supabase CLI/API, not through SQL migrations.
+-- Create the 'chat_attachments' bucket manually in the Supabase Dashboard with:
+-- - Public: true
+-- - File size limit: 50MB
+-- - Allowed MIME types: image/*, application/pdf 

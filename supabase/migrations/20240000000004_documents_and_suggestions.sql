@@ -1,6 +1,6 @@
 -- Create Documents table
 CREATE TABLE IF NOT EXISTS public.documents (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     title TEXT NOT NULL,
     content TEXT,
     user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS public.documents (
 
 -- Create Suggestions table
 CREATE TABLE IF NOT EXISTS public.suggestions (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4() NOT NULL,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
     document_id UUID NOT NULL,
     document_created_at TIMESTAMP WITH TIME ZONE NOT NULL,
     original_text TEXT NOT NULL,

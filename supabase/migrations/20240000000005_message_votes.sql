@@ -1,7 +1,7 @@
 -- Create Votes table
 -- Create Messages table
 CREATE TABLE IF NOT EXISTS public.messages (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     chat_id UUID NOT NULL REFERENCES public.chats(id) ON DELETE CASCADE,
     role TEXT NOT NULL,
     content JSONB NOT NULL,
