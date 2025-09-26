@@ -5,6 +5,18 @@ export type AuthError = {
   status: number;
 };
 
+// Helper function to get the correct redirect URL based on environment
+function getRedirectUrl(path: string = '/auth/callback') {
+  // Check if we're on the client side
+  if (typeof window !== 'undefined') {
+    return `${window.location.origin}${path}`;
+  }
+  
+  // For server-side, use environment variables or fallback to localhost
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+  return `${baseUrl}${path}`;
+}
+
 export async function signIn(email: string, password: string) {
   const supabase = createClient();
 
@@ -30,7 +42,7 @@ export async function signUp(email: string, password: string) {
     email,
     password,
     options: {
-      emailRedirectTo: `${location.origin}/auth/callback`,
+      emailRedirectTo: getRedirectUrl('/auth/callback'),
     },
   });
 
@@ -50,7 +62,7 @@ export async function signInWithGoogle() {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${location.origin}/auth/callback`,
+      redirectTo: getRedirectUrl('/auth/callback'),
     },
   });
 
