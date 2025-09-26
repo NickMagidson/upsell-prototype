@@ -34,9 +34,14 @@ export const updateSession = async (request: NextRequest) => {
 
     const user = await supabase.auth.getUser();
 
-    // Protected routes
+    // Don't redirect on auth callback routes
+    if (request.nextUrl.pathname.startsWith('/auth/callback')) {
+      return response;
+    }
+
+    // Protected routes - redirect unauthenticated users to login instead of register
     if (request.nextUrl.pathname === '/' && user.error) {
-      return NextResponse.redirect(new URL('/register', request.url));
+      return NextResponse.redirect(new URL('/login', request.url));
     }
 
     // Redirect logged in users from auth pages
