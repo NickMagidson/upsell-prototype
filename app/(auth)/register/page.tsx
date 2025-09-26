@@ -21,9 +21,11 @@ export default function RegisterPage() {
   useEffect(() => {
     const checkAuth = async () => {
       const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
       
-      if (session) {
+      // Force get user instead of getSession to ensure authentication
+      const { data: { user }, error } = await supabase.auth.getUser();
+      
+      if (user && !error) {
         // User is already authenticated, redirect to home
         router.push('/');
         router.refresh();

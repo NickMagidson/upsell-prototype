@@ -20,6 +20,9 @@ function getRedirectUrl(path: string = '/auth/callback') {
 export async function signIn(email: string, password: string) {
   const supabase = createClient();
 
+  // Clear any existing session first - use 'global' to clear all sessions
+  await supabase.auth.signOut();
+
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
@@ -37,6 +40,9 @@ export async function signIn(email: string, password: string) {
 
 export async function signUp(email: string, password: string) {
   const supabase = createClient();
+
+  // Clear any existing session first - use 'global' to clear all sessions
+  await supabase.auth.signOut();
 
   const { data, error } = await supabase.auth.signUp({
     email,
@@ -59,11 +65,14 @@ export async function signUp(email: string, password: string) {
 export async function signInWithGoogle() {
   const supabase = createClient();
 
+  // Clear any existing session first - use 'global' to clear all sessions
+  await supabase.auth.signOut();
+
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
       redirectTo: getRedirectUrl('/auth/callback'),
-            queryParams: {
+      queryParams: {
         access_type: 'offline',
         prompt: 'consent',
       },
@@ -83,6 +92,12 @@ export async function signInWithGoogle() {
 export async function signOut() {
   const supabase = createClient();
   const { error } = await supabase.auth.signOut();
+
+  // Clear any cached data
+  if (typeof window !== 'undefined') {
+    localStorage.clear();
+    sessionStorage.clear();
+  }
 
   if (error) {
     throw {

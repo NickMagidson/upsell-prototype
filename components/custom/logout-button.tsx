@@ -12,8 +12,9 @@ export function LogoutButton() {
   async function handleLogout() {
     try {
       await signOut();
-      router.push('/login');
-      router.refresh();
+      
+      // Force a hard refresh to clear all cached data
+      window.location.href = '/login';
     } catch (error: any) {
       toast.error(error.message);
     }

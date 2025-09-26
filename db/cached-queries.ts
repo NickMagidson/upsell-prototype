@@ -1,24 +1,46 @@
 import 'server-only';
 
+import { revalidateTag, unstable_cache } from 'next/cache';
 import { cache } from 'react';
-import { unstable_cache } from 'next/cache';
 
-import { createClient } from '@/lib/supabase/server';
 import {
-  getChatByIdQuery,
-  getUserQuery,
-  getChatsByUserIdQuery,
-  getMessagesByChatIdQuery,
-  getVotesByChatIdQuery,
-  getDocumentByIdQuery,
-  getDocumentsByIdQuery,
-  getSuggestionsByDocumentIdQuery,
-  getSessionQuery,
-  getUserByIdQuery,
-  getChatWithMessagesQuery,
+    getChatByIdQuery,
+    getChatsByUserIdQuery,
+    getChatWithMessagesQuery,
+    getDocumentByIdQuery,
+    getDocumentsByIdQuery,
+    getMessagesByChatIdQuery,
+    getSessionQuery,
+    getSuggestionsByDocumentIdQuery,
+    getUserByIdQuery,
+    getUserQuery,
+    getVotesByChatIdQuery,
 } from '@/db/queries';
+import { createClient } from '@/lib/supabase/server';
 
 const getSupabase = cache(() => createClient());
+
+// Helper function to clear session cache
+export const clearSessionCache = () => {
+  revalidateTag('session');
+  revalidateTag('user');
+};
+
+// Helper function to clear all user-related caches  
+export const clearUserCaches = (userId?: string, email?: string) => {
+  // Clear general session cache
+  clearSessionCache();
+  
+  // Clear user-specific caches if we have the identifiers
+  if (userId) {
+    revalidateTag(`user_by_id_${userId.slice(2, 12)}`);
+    revalidateTag(`user_${userId}_chats`);
+  }
+  
+  if (email) {
+    revalidateTag(`user_${email}`);
+  }
+};
 
 export const getSession = async () => {
   const supabase = await getSupabase();
@@ -30,7 +52,7 @@ export const getSession = async () => {
     ['session'],
     {
       tags: [`session`],
-      revalidate: 10, // Cache for 10 seconds
+      revalidate: 1, // Cache for only 1 second to prevent stale sessions
     }
   )();
 };

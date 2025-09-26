@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
+import { clearCaches } from '@/app/(auth)/actions';
 import { GoogleIcon } from '@/components/custom/icons';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,9 +22,11 @@ export default function LoginPage() {
   useEffect(() => {
     const checkAuth = async () => {
       const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
       
-      if (session) {
+      // Force get user instead of getSession to ensure authentication
+      const { data: { user }, error } = await supabase.auth.getUser();
+      
+      if (user && !error) {
         // User is already authenticated, redirect to home
         router.push('/');
         router.refresh();
@@ -38,13 +41,25 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
+      // Clear any cached data before signing in
+      localStorage.clear();
+      sessionStorage.clear();
+      
       const formData = new FormData(event.currentTarget);
       const email = formData.get('email') as string;
       const password = formData.get('password') as string;
 
       await signIn(email, password);
-      router.push('/');
-      router.refresh();
+      
+      // Clear server-side cache after successful login
+      await clearCaches();
+      
+      // Clear the session cache to ensure fresh data
+      const supabase = createClient();
+      await supabase.auth.getUser(); // Force refresh session
+      
+      // Force a hard refresh to clear all cached data
+      window.location.href = '/';
     } catch (error: any) {
       toast.error(error.message);
     } finally {

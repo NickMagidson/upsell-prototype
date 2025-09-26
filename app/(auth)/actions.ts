@@ -2,7 +2,7 @@
 
 import { z } from 'zod';
 
-import { getUser } from '@/db/cached-queries';
+import { clearUserCaches, getUser } from '@/db/cached-queries';
 import { createClient } from '@/lib/supabase/server';
 
 const authFormSchema = z.object({
@@ -25,6 +25,10 @@ export const login = async (
     });
 
     const supabase = await createClient();
+    
+    // Clear any existing session first
+    await supabase.auth.signOut();
+    
     const { error } = await supabase.auth.signInWithPassword({
       email: validatedData.email,
       password: validatedData.password,
@@ -66,6 +70,9 @@ export const register = async (
 
     const supabase = await createClient();
 
+    // Clear any existing session first
+    await supabase.auth.signOut();
+
     // Check if user exists
     const existingUser = await getUser(validatedData.email);
     if (existingUser) {
@@ -93,4 +100,27 @@ export const register = async (
 
     return { status: 'failed' };
   }
+};
+
+export const logout = async (): Promise<void> => {
+  const supabase = await createClient();
+  
+  // Get current user before signing out to clear their specific caches
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  // Sign out from Supabase
+  await supabase.auth.signOut();
+  
+  // Clear all user-related cached data
+  clearUserCaches(user?.id, user?.email);
+};
+
+export const clearCaches = async (): Promise<void> => {
+  const supabase = await createClient();
+  
+  // Get current user to clear their specific caches
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  // Clear all user-related cached data
+  clearUserCaches(user?.id, user?.email);
 };

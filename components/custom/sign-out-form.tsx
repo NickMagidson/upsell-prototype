@@ -1,6 +1,6 @@
 import Form from 'next/form';
 
-import { signOut } from '@/db/auth';
+import { logout } from '@/app/(auth)/actions';
 
 export const SignOutForm = () => {
   return (
@@ -9,7 +9,7 @@ export const SignOutForm = () => {
       action={async () => {
         'use server';
 
-        await signOut();
+        await logout();
       }}
     >
       <button
